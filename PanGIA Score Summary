@@ -5,9 +5,9 @@ import glob
 import pandas as pd
 
 
-# PANGIA SCORE SUMMARY FOR 13 TARGET PATHOGENS
+# PANGIA score summary for 13 target pathogens for the 3 bioprojects: PRJEB75460, PRJEB75462 & PRJEB75463
 
-# directories
+# Bioproject directories
 COHORT_DIRS = {
     "PRJEB75460": "/pub60/kirsten/Projects/PRJEB75460",
     "PRJEB75462": "/pub60/kirsten/Projects/PRJEB75462",
@@ -15,7 +15,7 @@ COHORT_DIRS = {
 }
 
 
-# EXPECTED COHORT SAMPLE NUMBERS
+# Expected numbers of samples in each bioproject 
 
 COHORT_SIZES = {
     "PRJEB75460": 973,
@@ -24,7 +24,7 @@ COHORT_SIZES = {
 }
 
 
-# OUTPUT DIRECTORY
+# Output directory
 
 OUTPUT_DIR = (
     "/pub60/kirsten/Projects/Results1/"
@@ -34,7 +34,7 @@ OUTPUT_DIR = (
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-# 13 TARGET PATHOGENS
+# Searching for the 13 target pathogens
 
 PATHOGENS = {
     "Clostridioides difficile":
@@ -78,12 +78,12 @@ PATHOGENS = {
 }
 
 
-# STORE ALL DETECTIONS
+# Store all detections in list
 
 all_results = []
 
 
-# PROCESS EACH COHORT
+# Process each bioproject 
 
 for cohort, cohort_dir in COHORT_DIRS.items():
 
@@ -92,7 +92,7 @@ for cohort, cohort_dir in COHORT_DIRS.items():
             os.path.join(
                 cohort_dir,
                 "**",
-                "*.report.tsv"
+                "*.report.tsv" # search for .report.tsv pangia output files 
             ),
             recursive=True
         )
@@ -100,11 +100,11 @@ for cohort, cohort_dir in COHORT_DIRS.items():
 
     print(
         f"{cohort}: found "
-        f"{len(report_files)} Pangia reports"
+        f"{len(report_files)} Pangia reports" # and print the number of these found
     )
 
 
-    # CHECK SAMPLE NUMBER
+    # check sample numbers, compare detected with expected, should match up
 
     expected = COHORT_SIZES[cohort]
 
@@ -116,11 +116,11 @@ for cohort, cohort_dir in COHORT_DIRS.items():
         )
 
 
-    # PROCESS EACH REPORT
+    # Process each samples report
 
     for report_file in report_files:
 
-        sample = os.path.basename(
+        sample = os.path.basename( # extract sample name from file name
             report_file
         ).replace(
             ".report.tsv",
@@ -128,27 +128,27 @@ for cohort, cohort_dir in COHORT_DIRS.items():
         )
 
 
-        # READ REPORT
+        # Read PanGIA report
 
         try:
 
             df = pd.read_csv(
                 report_file,
-                sep="\t",
-                dtype=str
+                sep="\t", # expects tab separated
+                dtype=str # read as string
             )
 
         except Exception as e:
 
             print(
-                f"WARNING: could not read "
+                f"WARNING: could not read " # print a warning if a report could not be read, skip to next sample
                 f"{report_file}: {e}"
             )
 
             continue
 
 
-        # REQUIRED COLUMNS
+        # check required columns are there, if not the sample will be skipped
 
         required_columns = {
             "LEVEL",
@@ -184,29 +184,29 @@ for cohort, cohort_dir in COHORT_DIRS.items():
         ].copy()
 
 
-        # SEARCH FOR THE 13 PATHOGENS
+        # Search for the pathogens
 
         for pathogen, pattern in PATHOGENS.items():
 
-            matches = df[
+            matches = df[ # identify matching species searching name column
                 df["NAME"]
                 .fillna("")
                 .str.match(
                     pattern,
-                    case=False,
-                    na=False
+                    case=False, # not case sensitive 
+                    na=False # missing names are taken as a non match
                 )
             ].copy()
 
 
-            # No detection
+            # No detection , skip to next 
 
             if len(matches) == 0:
 
                 continue
 
 
-            # Convert read count to numeric
+            # Convert read count to numeric (as it was originally read as a string)
 
             matches["READ_COUNT_NUM"] = (
                 pd.to_numeric(
@@ -228,32 +228,32 @@ for cohort, cohort_dir in COHORT_DIRS.items():
             row = matches.iloc[0]
 
 
-            # Extract values
+            # Extract numerical values
 
             score = pd.to_numeric(
-                row["SCORE_UNIQ"],
+                row["SCORE_UNIQ"], # unique pangia score
                 errors="coerce"
             )
 
             read_count = pd.to_numeric(
-                row["READ_COUNT"],
+                row["READ_COUNT"], # number of reads assigned to the pathogen
                 errors="coerce"
             )
 
             abundance = pd.to_numeric(
-                row["ABUNDANCE"],
+                row["ABUNDANCE"], # pangia abundance value
                 errors="coerce"
             )
 
 
-            # Skip invalid score
+            # Skip invalid score if cannot be converted 
 
             if pd.isna(score):
 
                 continue
 
 
-            # Store result
+            # Store result, one row added for each valid pathogen detection per sample
 
             all_results.append({
 
@@ -280,14 +280,14 @@ for cohort, cohort_dir in COHORT_DIRS.items():
             })
 
 
-# CREATE LONG DETECTION TABLE
+# Create long format table for detection
 
-detections = pd.DataFrame(
+detections = pd.DataFrame( # list of dictionaries converted into df
     all_results
 )
 
 
-if detections.empty:
+if detections.empty: # if no detections stop script 
 
     raise SystemExit(
         "ERROR: No Pangia pathogen "
@@ -295,7 +295,7 @@ if detections.empty:
     )
 
 
-# SAVE LONG TABLE
+# Save long format table 
 
 long_file = os.path.join(
     OUTPUT_DIR,
@@ -315,7 +315,7 @@ print(
 )
 
 
-# CREATE SUMMARY TABLES
+# Create summary tables for each bioproject 
 
 for cohort in COHORT_DIRS:
 
@@ -332,32 +332,32 @@ for cohort in COHORT_DIRS:
     ]
 
 
-    cohort_n = COHORT_SIZES[
+    cohort_n = COHORT_SIZES[ # expected bioproject sizes
         cohort
     ]
 
 
-    summary_rows = []
+    summary_rows = [] # list for summary df 
 
 
     # Process all 13 pathogens
 
     for pathogen in PATHOGENS:
 
-        pathogen_data = cohort_data[
+        pathogen_data = cohort_data[ # select pathogen and extract detections of this within the bioproject
             cohort_data["Pathogen"] == pathogen
         ]
 
 
-        scores = pathogen_data[
+        scores = pathogen_data[ # extract the pangia scores, removing any missing 
             "Pangia_score"
         ].dropna()
 
 
-        n_detected = len(scores)
+        n_detected = len(scores) # number of pathogens detected with a valid pangia score 
 
 
-        # Pathogen detected
+        # Pathogen detected, summary stats
 
         if n_detected > 0:
 
@@ -439,14 +439,14 @@ for cohort in COHORT_DIRS:
         })
 
 
-    # CREATE DATAFRAME
+    # Creat summary results df
 
     cohort_summary = pd.DataFrame(
-        summary_rows
+        summary_rows # each row reporesents one of the 13 pathogens 
     )
 
 
-    # SAVE COHORT TABLE
+    # Save table 
 
     output_file = os.path.join(
         OUTPUT_DIR,
@@ -461,13 +461,7 @@ for cohort in COHORT_DIRS:
     )
 
 
-    print(
-        f"Saved thesis table: "
-        f"{output_file}"
-    )
-
-
-# BASIC CHECKS
+# run checks 
 
 print()
 print(
