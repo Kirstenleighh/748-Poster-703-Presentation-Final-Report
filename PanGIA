@@ -1,13 +1,12 @@
 # PanGIA 
 
-To run samples sequentially in a screen:
+# To run samples sequentially in a screen:
 
 conda activate /pub54/edwardco/miniconda3/envs/pangia
 
-cd into my trimmed reads directory 
+# cd into trimmed reads directory 
 
 nano run_pangia.sh
-
 
 #!/bin/bash
  
