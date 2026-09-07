@@ -1,4 +1,5 @@
 # Pangia pathogen heatmap - SCORE
+# First 200 samples of PRJEB75460 only
 
 # Install packages
 packages <- c("data.table", "pheatmap", "dplyr", "tidyr", "readr", "tibble", "stringr")
