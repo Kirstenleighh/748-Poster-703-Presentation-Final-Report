@@ -1,5 +1,8 @@
 # Genus Matrices 
+# extract genus level read counts and convert into rel abundance
+# combining all samples to create a genus by sample matrix 
 
+# import packages
 import os
 import glob
 import pandas as pd
@@ -8,7 +11,7 @@ import pandas as pd
 # Output directory
 
 output_dir = "/pub60/kirsten/Projects/Results1/Section_1_Heatmaps"
-os.makedirs(output_dir, exist_ok=True)
+os.makedirs(output_dir, exist_ok=True) # don't show an error if dir already exists
 
 
 # Kraken2 kreport locations for full cohort
@@ -42,34 +45,34 @@ expected_samples = {
 
 def make_genus_matrix(directories):
 
-    sample_tables = []
+    sample_tables = [] # list for each samples series which contains index (genus names) and values (rel abundance)
 
-    for directory in directories:
+    for directory in directories: # for each kraken2 directory 
 
         files = glob.glob(
-            os.path.join(directory, "*.kreport2")
+            os.path.join(directory, "*.kreport2") # find all .kreport2 files and return a list of file paths
         )
 
         print()
-        print(f"Reading {len(files)} kreport2 files from:")
+        print(f"Reading {len(files)} kreport2 files from:") # print number of files found per dir
         print(directory)
 
-        for f in files:
+        for f in files: # for each sample
 
-            sample = os.path.basename(f).replace(
+            sample = os.path.basename(f).replace( # extract sample name from file name (to be made into column names in matrix)
                 ".kreport2",
                 ""
             )
 
-            rows = []
+            rows = [] # list for genus and read count from individual samples 
 
-            with open(f, "r") as infile:
+            with open(f, "r") as infile: # read .kreport2
 
-                for line in infile:
+                for line in infile: # line by line
 
-                    fields = line.rstrip("\n").split("\t")
+                    fields = line.rstrip("\n").split("\t") # split lines tab separated 
 
-                    if len(fields) < 6:
+                    if len(fields) < 6: # make sure each line in the kreport contains 6 columns, if not skip
                         continue
 
                     # Kraken2 report columns:
@@ -81,23 +84,23 @@ def make_genus_matrix(directories):
                     # 4 = taxonomy ID
                     # 5 = taxon name
 
-                    rank = fields[3]
+                    rank = fields[3] # extract taxonomic rank
 
                     # Keep genus-level entries only
                     if rank == "G":
 
-                        genus = fields[5].strip()
+                        genus = fields[5].strip() # remove white space
 
                         try:
-                            clade_reads = int(fields[1])
+                            clade_reads = int(fields[1]) # convert clade read into integer, skip if cannot be done
                         except ValueError:
                             continue
 
                         rows.append(
-                            [genus, clade_reads]
+                            [genus, clade_reads] # store genus and clade read count for each sample 
                         )
 
-            # Check that this sample contained genus entries
+            # Check that this sample contained genus entries, if not skip (doesnt include it in matrix)
 
             if not rows:
 
@@ -107,7 +110,7 @@ def make_genus_matrix(directories):
 
                 continue
 
-            # Convert to dataframe
+            # Convert genus and read counts to dataframe
 
             df = pd.DataFrame(
                 rows,
@@ -124,29 +127,29 @@ def make_genus_matrix(directories):
                 .sum()
             )
 
-            # Convert to relative abundance
+            # Convert to relative abundance for final matrix
 
             total_reads = df.sum()
 
-            if total_reads > 0:
+            if total_reads > 0: # make sure total is greater than 0 
 
                 df = df / total_reads
 
             # Sample name becomes column name
             df.name = sample
 
-            sample_tables.append(df)
+            sample_tables.append(df) # add sample genus abundance to list of samples
 
     # Combine all samples
 
     if not sample_tables:
 
-        raise RuntimeError(
+        raise RuntimeError( # stop script and give error if no valid samples were found
             "No valid kreport2 files containing genus "
             "entries were found."
         )
 
-    matrix = pd.concat(
+    matrix = pd.concat( # combine all samples into genus by sample matrix 
         sample_tables,
         axis=1
     ).fillna(0)
@@ -167,8 +170,8 @@ for cohort, directories in kreport_dirs.items():
 
     # matrix info
 
-    n_genera = genus_matrix.shape[0]
-    n_samples = genus_matrix.shape[1]
+    n_genera = genus_matrix.shape[0] # number of rows for genera
+    n_samples = genus_matrix.shape[1] # number of columns for samples
 
     print()
     print(
@@ -176,7 +179,7 @@ for cohort, directories in kreport_dirs.items():
         f"{n_genera} genera x {n_samples} samples"
     )
 
-    # check sample number
+    # check sample numbers
 
     expected = expected_samples[cohort]
 
@@ -237,7 +240,7 @@ for cohort, directories in kreport_dirs.items():
     )
 
 
-
+# print summary when finished 
 print()
 print("ALL THREE GENUS MATRICES COMPLETE")
 print()
