@@ -1,5 +1,5 @@
-Pangia heatmap using average read count - R 
- 
+# Pangia heatmap using average read count - R 
+# first 200 samples from PRJBE75460 only
  
 packages <- c("data.table", "pheatmap", "dplyr", "tidyr")
 new_packages <- packages[!(packages %in% installed.packages()[, "Package"])]
