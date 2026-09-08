@@ -1,6 +1,6 @@
 # TOP 20 genus stacked bar chart
 
-
+# import libraries/packages
 import os
 import pandas as pd
 import numpy as np
@@ -18,7 +18,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Genus matrices
 
-genus_matrices = {
+genus_matrices = { # dictionary that links each bioproject to its genus matrix
     "PRJEB75460": os.path.join(
         input_dir, "kraken_genus_matrix_60.csv"
     ),
@@ -33,31 +33,31 @@ genus_matrices = {
 
 # read matrices
 
-matrices = {}
+matrices = {} # dictionary to store the data frames for each bioproject
 
 print()
 print("READING GENUS MATRICES")
 
-for cohort, filepath in genus_matrices.items():
+for cohort, filepath in genus_matrices.items(): # for each bioproject, loop through its matching file
 
     print()
     print(f"{cohort}")
     print(filepath)
 
-    df = pd.read_csv(
+    df = pd.read_csv( # read in the csv
         filepath,
-        index_col=0
+        index_col=0 # first column to be used as the row, row index contains genus names
     )
 
-    matrices[cohort] = df
+    matrices[cohort] = df # store the df under its specific bioproject name
 
     print(
         f"Dimensions: "
-        f"{df.shape[0]} genera x {df.shape[1]} samples"
+        f"{df.shape[0]} genera x {df.shape[1]} samples" # 0 = number of genera, 1 = number of samples
     )
 
 
-# Combine all samples
+# Combine all samples, aligning rows according to genus names
 
 combined = pd.concat(
     matrices.values(),
@@ -73,19 +73,19 @@ print(
 )
 
 
-# Find top20 genera across full cohrot
+# Find top20 genera across full cohort
 
-mean_abundance = (
-    combined.mean(axis=1)
+mean_abundance = ( # mean abundance calculated for each genus 
+    combined.mean(axis=1) # across all samples 
     .sort_values(ascending=False)
 )
 
-top20 = mean_abundance.head(20).index.tolist()
+top20 = mean_abundance.head(20).index.tolist() # select 20 genera with the highest abundance and make a python list
 
 print()
 print("TOP 20 GENERA ACROSS FULL COHORT")
 
-for i, genus in enumerate(top20, start=1):
+for i, genus in enumerate(top20, start=1): # print the list, in rank order 
     print(
         f"{i:2d}. {genus} "
         f"({mean_abundance[genus]:.6f})"
@@ -118,13 +118,13 @@ print(f"Saved top-20 list: {top20_file}")
 
 # Calculate mean abundance for each bioproject
 
-plot_data = {}
+plot_data = {} # dictionary for abundance per bioproject
 
-for cohort, matrix in matrices.items():
+for cohort, matrix in matrices.items(): # for each bioproject loop through its original matrix
 
-    # Keep only top 20
+    # Keep only top 20 genera rows
     top = matrix.loc[
-        matrix.index.intersection(top20)
+        matrix.index.intersection(top20) # ensures that genera are selected from current bioproject matrix only
     ].copy()
 
     # Add missing top-20 genera as zero
@@ -133,31 +133,31 @@ for cohort, matrix in matrices.items():
         fill_value=0
     )
 
-    # Mean abundance across samples
+    # Mean abundance across samples in the bioproject
     mean_values = top.mean(axis=1)
 
-    # Everything else
+    # Everything else remaining (not top 20) is classed as other
     other = (
         matrix.drop(
             index=matrix.index.intersection(top20)
         )
-        .sum(axis=0)
-        .mean()
+        .sum(axis=0) # calculates total abundance of all remaining genera for each sample
+        .mean() # average of those totals across all samples in the bioproject
     )
 
-    # Create Series
+    # Create Series (combining top 20 and other)
     values = mean_values.copy()
     values["Other"] = other
 
-    plot_data[cohort] = values
+    plot_data[cohort] = values # store as series of values for this bioproject 
 
 
-# Create df
+# Create df for plot from dictionary 
 
 plot_df = pd.DataFrame(plot_data).T
 
-# Convert to percentages
-plot_df = plot_df.div(
+# Convert abundances to percentages for bar chart
+plot_df = plot_df.div( # divide each category by row total and multiply by 100 (each bar totals 100)
     plot_df.sum(axis=1),
     axis=0
 ) * 100
@@ -200,15 +200,15 @@ color_dict["Other"] = "lightgrey"
 
 # Plot
 
-fig, ax = plt.subplots(
-    figsize=(13, 9)
+fig, ax = plt.subplots( # create the figure and axis 
+    figsize=(13, 9) # sizing
 )
 
 bottom = np.zeros(
-    len(plot_df)
+    len(plot_df) # plotting the height of each genus in each stack
 )
 
-x = np.arange(
+x = np.arange( # x axis positions for the 3 bioproject bars
     len(plot_df)
 )
 
@@ -234,9 +234,9 @@ for genus in top20 + ["Other"]:
 
 # Axes
 
-ax.set_xticks(x)
+ax.set_xticks(x) # tick mark positions
 
-ax.set_xticklabels(
+ax.set_xticklabels( # tick labels 
     [
         "PRJEB75460",
         "PRJEB75462",
@@ -245,17 +245,17 @@ ax.set_xticklabels(
     fontsize=12
 )
 
-ax.set_ylabel(
+ax.set_ylabel( # y axis lable for mean rel abundance
     "Mean relative abundance (%)",
     fontsize=13
 )
 
-ax.set_xlabel(
+ax.set_xlabel( # x axis label for bioproject 
     "Cohort",
     fontsize=13
 )
 
-ax.set_ylim(
+ax.set_ylim( # y axis needs to run from 0 to 100
     0,
     100
 )
@@ -317,7 +317,7 @@ plt.close()
 
 
 print()
-print("STACKED BAR CHART COMPLETE")
+print("Stacked bar chart complete")
 
 print(f"PNG: {outfile_png}")
 print(f"PDF: {outfile_pdf}")
