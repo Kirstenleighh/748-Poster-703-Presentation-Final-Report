@@ -1,6 +1,6 @@
 # 748-Poster / 703-Presentation / 703-Report
 
-# Pathogen signatures in healthy human gut microbiomes: Metagenomic analysis of the ZOE cohort to reveal its value as a representative healthy population.
+## Pathogen signatures in healthy human gut microbiomes: Metagenomic analysis of the ZOE cohort to reveal its value as a representative healthy population.
 
 Identification and characterisation of the microbial composition and pathogen signatures in the ZOE BioProject datasets: PRJEB75460, PRJEB75462 and PRJEB75463 from Predict studies 2 and 3. 
 
