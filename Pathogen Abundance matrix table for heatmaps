@@ -1,11 +1,15 @@
+# pathogen abundances for heatmaps 
+
 #!/usr/bin/env python3
 
+# import modules/packages 
 import os
 import glob
 import pandas as pd
 
 
-# 13 TARGET PATHOGENS
+# 13 target pathogens
+# create a dictionary that matches the pathogens to their ncbi ids
 
 pathogens = {
     "Clostridioides difficile": 1496,
@@ -23,15 +27,15 @@ pathogens = {
     "Human adenovirus F": 130309
 }
 
-taxid_to_pathogen = {
-    str(taxid): pathogen
+taxid_to_pathogen = { # reverse search dictionary
+    str(taxid): pathogen # convert taxid to string
     for pathogen, taxid in pathogens.items()
 }
 
 
-# BRACKEN DIRECTORIES
+# Bracken directories 
 
-cohort_dirs = {
+cohort_dirs = { # dictionary for bracken results, location for each bioproject
 
     "PRJEB75460": [
         "/pub60/kirsten/Projects/PRJEB75460/Bracken_newdb_200_results",
@@ -48,39 +52,39 @@ cohort_dirs = {
 }
 
 
-# OUTPUT DIRECTORY
+# Output directory
 
 output_dir = (
     "/pub60/kirsten/Projects/Results1/"
     "Section_3_pathogens/heatmap"
 )
 
-os.makedirs(output_dir, exist_ok=True)
+os.makedirs(output_dir, exist_ok=True) # create output dir if it doesnt already exist
 
 
-# PROCESS ALL BRACKEN FILES
+# Process all Bracken files 
 
-all_records = []
+all_records = [] # list to store record for bioproject, sample and pathogen, each sample should have 13 records 
 
-for cohort, directories in cohort_dirs.items():
+for cohort, directories in cohort_dirs.items(): # for each bioproject, loop through the bracken directory 
 
-    files = []
+    files = [] # list to store the bracken files for this bioproject
 
-    for directory in directories:
+    for directory in directories: # find every .bracken file in current dir
         files.extend(
             glob.glob(
-                os.path.join(directory, "*.bracken")
+                os.path.join(directory, "*.bracken") # join each directory/*.bracken 
             )
         )
 
     # Remove duplicate paths
     files = sorted(set(files))
 
-    print(f"{cohort}: found {len(files)} Bracken files")
+    print(f"{cohort}: found {len(files)} Bracken files") # report how many .bracken files were found for this bioproject 
 
-    for filepath in files:
+    for filepath in files: # for each sample .bracken
 
-        sample = os.path.basename(filepath).replace(
+        sample = os.path.basename(filepath).replace( # extract file name from full path, and remove .bracken extension, leaving sample id only
             ".bracken", ""
         )
 
@@ -90,10 +94,10 @@ for cohort, directories in cohort_dirs.items():
 
             df = pd.read_csv(
                 filepath,
-                sep="\t"
+                sep="\t" # read as tab separated 
             )
 
-        except Exception as e:
+        except Exception as e: # if cant be read, print wanring and skip to next bracken file 
 
             print(
                 f"WARNING: could not read {filepath}"
@@ -101,7 +105,7 @@ for cohort, directories in cohort_dirs.items():
             print(e)
             continue
 
-        # Check required columns
+        # Check required columns 
 
         required_columns = {
             "taxonomy_id",
@@ -109,14 +113,15 @@ for cohort, directories in cohort_dirs.items():
             "fraction_total_reads"
         }
 
-        if not required_columns.issubset(df.columns):
+        if not required_columns.issubset(df.columns): # should return true if all columns exist
 
             print(
                 f"WARNING: required columns missing in "
                 f"{filepath}"
             )
 
-            continue
+            continue # skip to next file if not 
+
 
         # Convert TaxID to string
 
@@ -129,29 +134,29 @@ for cohort, directories in cohort_dirs.items():
         # Create dictionary containing pathogen results
         # for this sample
 
-        sample_hits = {}
+        sample_hits = {} # dictionary of pathogens detected in current sample
 
-        for _, row in df.iterrows():
+        for _, row in df.iterrows(): # for each row in bracken df
 
-            taxid = str(row["taxonomy_id"])
+            taxid = str(row["taxonomy_id"]) # extract taxonomy id as string
 
-            if taxid in taxid_to_pathogen:
+            if taxid in taxid_to_pathogen: # if one of the selected pathogens
 
-                pathogen = taxid_to_pathogen[taxid]
+                pathogen = taxid_to_pathogen[taxid] # convert to pathogen name from id 
 
                 sample_hits[pathogen] = {
                     "Bracken_read_count":
-                        int(row["new_est_reads"]),
+                        int(row["new_est_reads"]), # store est read count
 
                     "Relative_abundance":
-                        float(row["fraction_total_reads"])
+                        float(row["fraction_total_reads"]) # store rel abundance
                 }
 
         # Create ALL 13 pathogen rows even if absent
 
-        for pathogen, taxid in pathogens.items():
+        for pathogen, taxid in pathogens.items(): # loop through the list of 13 pathogens, each sample will have 13 rows regardless of presence/absence
 
-            if pathogen in sample_hits:
+            if pathogen in sample_hits: # if pathogen is present in bracken file, record values:
 
                 read_count = sample_hits[pathogen][
                     "Bracken_read_count"
@@ -161,12 +166,12 @@ for cohort, directories in cohort_dirs.items():
                     "Relative_abundance"
                 ]
 
-            else:
+            else: # if not present, values are 0
 
                 read_count = 0
                 relative_abundance = 0.0
 
-            all_records.append({
+            all_records.append({ # add the complete sample record (13 rows) to all records
 
                 "Cohort": cohort,
 
@@ -184,12 +189,12 @@ for cohort, directories in cohort_dirs.items():
             })
 
 
-# CREATE DATAFRAME
+# Create dataframe 
 
-complete = pd.DataFrame(all_records)
+complete = pd.DataFrame(all_records) # the list of dictionaries then becomes one df, with each dictionary being one row
 
 
-if complete.empty:
+if complete.empty: # if no records, stop script
 
     raise RuntimeError(
         "No records were generated. "
@@ -197,7 +202,7 @@ if complete.empty:
     )
 
 
-# SORT DATA
+# Sort data
 
 cohort_order = [
     "PRJEB75460",
@@ -205,26 +210,26 @@ cohort_order = [
     "PRJEB75463"
 ]
 
-pathogen_order = list(pathogens.keys())
+pathogen_order = list(pathogens.keys()) # keep to pathogen order of the list the same as the dictionary
 
-complete["Cohort"] = pd.Categorical(
+complete["Cohort"] = pd.Categorical( # order the bioprojects 60, 62 and 63
     complete["Cohort"],
     categories=cohort_order,
     ordered=True
 )
 
-complete["Pathogen"] = pd.Categorical(
+complete["Pathogen"] = pd.Categorical( # order the pathogens 
     complete["Pathogen"],
     categories=pathogen_order,
     ordered=True
 )
 
-complete = complete.sort_values(
+complete = complete.sort_values( # sort table in order, bioproject, sample, pathogen
     ["Cohort", "Sample", "Pathogen"]
 )
 
 
-# SAVE LONG-FORM TABLE
+# Save long format table 
 
 long_output = os.path.join(
     output_dir,
@@ -233,7 +238,7 @@ long_output = os.path.join(
 
 complete.to_csv(
     long_output,
-    sep="\t",
+    sep="\t", # save as tab separated
     index=False
 )
 
@@ -243,18 +248,18 @@ print(
 )
 
 
-# CREATE WIDE RELATIVE-ABUNDANCE TABLE
+# Create wide relative abundance table 
 
-wide = complete.pivot_table(
-    index="Pathogen",
-    columns=["Cohort", "Sample"],
+wide = complete.pivot_table( # convert long format table into wide format
+    index="Pathogen", # rows as pathogens
+    columns=["Cohort", "Sample"], # columns as bioproject and sample
     values="Relative_abundance",
-    fill_value=0,
+    fill_value=0, # any missing values become 0
     observed=False
 )
 
 wide = wide.reindex(
-    pathogen_order
+    pathogen_order # reorder rows to match the order of the pathogen list that was defined before 
 )
 
 
@@ -266,7 +271,7 @@ wide.columns = [
 ]
 
 
-# SAVE WIDE TABLE
+# Save wide format table 
 
 wide_output = os.path.join(
     output_dir,
@@ -283,16 +288,18 @@ print(
 )
 
 
-# CREATE LOG10 TABLE
+# Create log10 table 
+# converting rel abundance from a fraction to RPM value (reads per million)
 # log10(1 + RPM)
 
 log_wide = wide * 1_000_000
 
-import numpy as np
+import numpy as np # import numpy for log transformation
 
 log_wide = np.log10(1 + log_wide)
 
-# SAVE LOG10 TABLE
+
+# Save log10 table 
 
 log_output = os.path.join(
     output_dir,
@@ -309,7 +316,7 @@ print(
 )
 
 
-# CHECK SAMPLE COUNTS
+# Check sample counts per bioproject
 
 print()
 print("SAMPLE COUNTS")
@@ -326,7 +333,7 @@ sample_counts = (
 print(sample_counts)
 
 
-# TOTAL SAMPLE COUNT
+# Total sample count
 
 total_samples = (
     complete[
@@ -342,7 +349,7 @@ print(
 )
 
 
-# EXPECTED COUNTS
+# Expected sample counts
 
 expected = {
     "PRJEB75460": 973,
@@ -353,9 +360,9 @@ expected = {
 print()
 print("EXPECTED VS ACTUAL")
 
-for cohort in cohort_order:
+for cohort in cohort_order: # for each bioproject
 
-    actual = sample_counts.get(cohort, 0)
+    actual = sample_counts.get(cohort, 0) # retrieve count, return 0 if absent
 
     print(
         f"{cohort}: "
@@ -364,7 +371,7 @@ for cohort in cohort_order:
     )
 
 
-# CHECK TOTAL NUMBER OF ROWS
+# Check total number of rows
 
 expected_rows = 2966 * 13
 
@@ -379,5 +386,3 @@ print(
     f"Actual pathogen rows:   {actual_rows}"
 )
 
-print()
-print("Done.")
