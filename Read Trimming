@@ -1,38 +1,39 @@
 # TRIMMING 
 
-```
-Bash script for trimming and fastqc:
+# Bash script for trimming and fastqc (First 200 samples of PRJEB75460):
 
 #!/bin/bash
 
+# define directories 
 BASE_DIR=~/Projects/PRJEB75460/human_gut_metagenome
 TRIM_DIR=~/Projects/PRJEB75460/Trimmed_reads
 TRIM_FASTQC_DIR=~/Projects/PRJEB75460/fastqc_trimmed
 
-mkdir -p "$TRIM_DIR" "$TRIM_FASTQC_DIR"
+mkdir -p "$TRIM_DIR" "$TRIM_FASTQC_DIR" # make directories if needed
 
-cd "$BASE_DIR"
+cd "$BASE_DIR" # cd into base directory where raw reads are 
 
-for DIR in $(ls -d SAMEA* | head -n 200); do
+for DIR in $(ls -d SAMEA* | head -n 200); do # for SAMEA directories, process first 200
 
     echo "Processing $DIR"
 
-    for R1 in "$DIR"/*_1.fastq.gz; do
+    for R1 in "$DIR"/*_1.fastq.gz; do # for read 1
         [ -e "$R1" ] || continue
 
-        R2=${R1/_1.fastq.gz/_2.fastq.gz}
+        R2=${R1/_1.fastq.gz/_2.fastq.gz} # find matching R2 read
 
         echo "Trimming $R1 and $R2"
 
-        trim_galore \
+        trim_galore \ # run TrimGalore on the paired end reads
             --paired \
-            --quality 20 \
-            --output_dir "$TRIM_DIR" \
+            --quality 20 \ # remove low quality bases from read ends
+            --output_dir "$TRIM_DIR" \ # write fastq files into trim dir
             "$R1" "$R2"
 
     done
 
 done
+
 ```
 # FastQC & MultiQC on Trimmed Reads
 ```
@@ -42,45 +43,49 @@ multiqc
 ```
 
 
-
-
 # Trimming remaining samples from PRJEB75460:
 
-# STEP 1 - Open a screen session
+# Open a screen session
 
 screen -S parallel_trimming_11-06-26
  
-# STEP 2 - Activate conda environment and install GNU parallel
+# Activate conda environment and install GNU parallel
 
 conda activate [ENV NAME]  #conda activate trimming
-conda install -c conda-forge parallel
+conda install -c conda-forge parallel # install parallel into trimming env
  
-# STEP 3 - Navigate to 775 folder
+# Navigate to 775 folder
 
-# STEP 4 - Run Trim Galore
+# Run Trim Galore
+# parallel runs the command simultaneously
+# input file is tab separated
+# -j 10 indicates max number of jobs is 10 at a time
+# --cores 8 is the number of cpu cores, 10 jobs and 8 cores gives 80 CPU cores
+# --paired is needed for paired end reads
+# --quality 20 is the trimming threshold
+# :::: indicates where the inputs are e.g. in a specified file, useful if you have a list of samples that still need trimming
 
 parallel --colsep "\t" -j 10 "trim_galore --cores 8 --paired --quality 20 ~kirsten/Projects/PRJEB75460/human_gut_metagenome/*/{1}_1.fastq.gz ~kirsten/Projects/PRJEB75460/human_gut_metagenome/*/{1}_2.fastq.gz" :::: kirsten_remaining.tab
 
 
-
 # PRJEB75462:
 
-# STEP 1 - Open a screen session
+# Open a screen session
 
 screen -S 62trimming
  
-# STEP 2 - Activate conda environment and install GNU parallel
+# Activate conda environment and install GNU parallel
 
 conda activate [ENV NAME]  #conda activate trimming
 conda install -c conda-forge parallel
  
-# STEP 3 - Navigate to PRJEB75462 folder
+# Navigate to PRJEB75462 folder
 
-# Step 4 - Make sample list for samples in the subset 
+# Make sample list for samples in the subset 
 
 find ~/Projects/PRJEB75462/PRJEB75462_subset1000 -mindepth 2 -maxdepth 2 -name "*_1.fastq.gz" | awk -F'/' '{dir=$(NF-1); file=$NF; sub(/_1\.fastq\.gz$/, "", file); print dir, file}' > sample_list.txt
 
-# STEP 5 - Run Trim Galore
+# Run Trim Galore
 
 parallel --colsep ' ' -j 10 'trim_galore --cores 8 --paired --quality 20 ~/Projects/PRJEB75462/PRJEB75462_subset1000/{1}/{2}_1.fastq.gz ~/Projects/PRJEB75462/PRJEB75462_subset1000/{1}/{2}_2.fastq.gz' :::: sample_list.txt
 
@@ -94,22 +99,22 @@ find ~/Projects/PRJEB75462/PRJEB75462_subset1000 -name "*_val_*.fq.gz" | wc -l
 
 # PRJEB75463:
 
-# STEP 1 - Open a screen session
+# Open a screen session
 
 screen -S 63trimming
  
-# STEP 2 - Activate conda environment and install GNU parallel
+# Activate conda environment and install GNU parallel
 
 conda activate [ENV NAME]  #conda activate trimming
 conda install -c conda-forge parallel
  
-# STEP 3 - Navigate to PRJEB75463 folder
+# Navigate to PRJEB75463 folder
 
-# Step 4 - Make sample list for samples in the subset 
+# Make sample list for samples in the subset 
 
 find ~/Projects/PRJEB75463/PRJEB75463_subset1000 -mindepth 2 -maxdepth 2 -name "*_1.fastq.gz" | awk -F'/' '{dir=$(NF-1); file=$NF; sub(/_1\.fastq\.gz$/, "", file); print dir, file}' > sample_list63.txt
 
-# STEP 5 - Run Trim Galore
+# Run Trim Galore
 
 parallel --colsep ' ' -j 10 'trim_galore --cores 8 --paired --quality 20 ~/Projects/PRJEB75463/PRJEB75463_subset1000/{1}/{2}_1.fastq.gz ~/Projects/PRJEB75463/PRJEB75463_subset1000/{1}/{2}_2.fastq.gz' :::: sample_list63.txt
 
