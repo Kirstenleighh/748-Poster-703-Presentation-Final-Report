@@ -8,4 +8,14 @@ Assessing whether the participant profiles in the datasets are consistent with w
 
 Metagenomic analysis of approximately 3000 samples will be conducted for taxonomic classification and species-level pathogen abundance estimates, alpha diversity and pathogen species detection and assignment using bioinformatics tools: Kraken2, Bracken and PanGIA. 
 
-All analysis ran on Linux (PuTTY, CGR server) and R
+### All analysis ran on Linux (PuTTY, CGR server) and R
+
+## Workflow:
+1. Data download
+2. Data preprocessing and quality control
+3. Taxonomic classification with Kraken2
+4. Abundance estimation with Bracken
+5. Alpha diversity analysis
+6. Beta diversity analysis
+7. Pathogen detection and abundance testing with Bracken
+8. Further pathogen detection with PanGIA
