@@ -1,5 +1,8 @@
+# Pathogen abundance heatmaps
+
 #!/usr/bin/env Rscript
 
+# load required packages
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -30,7 +33,7 @@ dat_long <- dat %>%
     values_to = "Log10_Relative_Abundance"
   )
 
-
+# check whoch bioproject each sample belongs to
 dat_long <- dat_long %>%
   mutate(
     Cohort = case_when(
@@ -42,7 +45,7 @@ dat_long <- dat_long %>%
   )
 
 
-# PATHOGEN ORDER
+# define pathogen order for heatmap
 
 pathogen_order <- c(
   "Clostridioides difficile",
@@ -69,7 +72,7 @@ dat_long <- dat_long %>%
   )
 
 
-# MAKE ONE HEATMAP PER COHORT
+# Make one heatmap per bioproject
 
 cohorts <- c(
   "PRJEB75460",
@@ -78,13 +81,13 @@ cohorts <- c(
 )
 
 
-for (cohort_name in cohorts) {
+for (cohort_name in cohorts) { # for each bioproject 
 
   cohort_data <- dat_long %>%
-    filter(Cohort == cohort_name)
+    filter(Cohort == cohort_name) # filter samples belonging the the current bioproject
 
 
-  # Order samples
+  # Order samples and convert them to factors for ggplot to order them as required , otherwise would be alphabetical
 
   cohort_data <- cohort_data %>%
     mutate(
@@ -95,7 +98,7 @@ for (cohort_name in cohorts) {
     )
 
 
-  # Plot
+  # Plot heatmap
 
   p <- ggplot(
     cohort_data,
@@ -111,7 +114,7 @@ for (cohort_name in cohorts) {
       height = 1
     ) +
 
-    scale_fill_gradientn(
+    scale_fill_gradientn( 
       colours = c(
         "white",
         "#FEE0E0",
@@ -120,7 +123,7 @@ for (cohort_name in cohorts) {
         "#DE2D26",
         "#A50F15"
       ),
-      values = scales::rescale(c(0, 0.5, 1, 2, 3, 4)),
+      values = scales::rescale(c(0, 0.5, 1, 2, 3, 4)), # colour scale
       breaks = c(0, 1, 2, 3, 4),
       labels = c(
         "0 RPM",
@@ -129,26 +132,26 @@ for (cohort_name in cohorts) {
         "999 RPM",
         "9,999 RPM"
       ),
-      limits = c(0, 4),
+      limits = c(0, 4), 
       name = "Relative abundance"
     )
 
-    labs(
+    labs( # plot labels 
       title = cohort_name,
-      x = "Sample",
-      y = "Pathogen"
+      x = "Sample", # x axis samples
+      y = "Pathogen" # y axis pathogens
     ) +
 
-    theme_minimal(
+    theme_minimal( # theme and font size
       base_size = 12
     ) +
 
     theme(
-      axis.text.x = element_blank(),
-      axis.ticks.x = element_blank(),
+      axis.text.x = element_blank(), # remove individual sample names from axis 
+      axis.ticks.x = element_blank(), # as well as tick marks
 
       axis.text.y = element_text(
-        size = 9
+        size = 9 # pathogen name font size
       ),
 
       panel.grid = element_blank(),
