@@ -1,30 +1,32 @@
-# SHANNON
+# Alpha diversity
+# Shannon
+# using .bracken files
 
 #!/bin/bash
 
-# ALPHA DIVERSITY
-# SHANNON DIVERSITY
-
+# output file
 OUTPUT="/pub60/kirsten/Projects/Results1/Section_2_diversity/alpha_diversity_shannon_all.csv"
 
+# Path to Alpha diversity python script 
 ALPHA_SCRIPT="/pub60/kirsten/Projects/PRJEB75460/alphadiversity.py"
 
-echo "sample,cohort,shannon" > "$OUTPUT"
+echo "sample,cohort,shannon" > "$OUTPUT" # output to csv, sample id, bioproject and shannon diversity value
 
 
 # PRJEB75460 - FIRST 200
 
-echo "Processing PRJEB75460 - first 200..."
+echo "Processing PRJEB75460 first 200"
 
+# loop through each .bracken file in the results dir
 for FILE in /pub60/kirsten/Projects/PRJEB75460/Bracken_newdb_200_results/*.bracken
 do
-    SAMPLE=$(basename "$FILE" .bracken)
+    SAMPLE=$(basename "$FILE" .bracken) # extract sample name from filename
 
-    VALUE=$(python "$ALPHA_SCRIPT" \
-        -f "$FILE" \
-        -a Sh | grep -oP '(?<=: )[\d.]+')
+    VALUE=$(python "$ALPHA_SCRIPT" \ # run alphadiversity.py script on current .bracken file 
+        -f "$FILE" \ # .bracken as the input
+        -a Sh | grep -oP '(?<=: )[\d.]+') # Sh for shannon diversity, output piped into grep to extract the number after :, shannon value is stored in VALUE
 
-    echo "${SAMPLE},PRJEB75460,${VALUE}" >> "$OUTPUT"
+    echo "${SAMPLE},PRJEB75460,${VALUE}" >> "$OUTPUT" # add as a row to output
 done
 
 
@@ -76,7 +78,7 @@ do
 done
 
 
-# Check counts
+# Check sample counts and shannon results for each bioproject
 
 echo "SHANNON RESULTS"
 
@@ -89,6 +91,3 @@ done
 echo ""
 echo "Output:"
 echo "$OUTPUT"
-
-
-
